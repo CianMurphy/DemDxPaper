@@ -1,0 +1,35 @@
+---
+title: "StudySampleSize"
+author: "Cian"
+date: "17/07/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r pressure, echo=TRUE}
+confidence.level<- 0.95
+proportion<- 0.5 # Worst case scenario
+prop.pop <- proportion * (1- proportion)
+
+errors<-c()
+sizes<-seq(50,400,50)
+for(n in 1:length(sizes))
+{
+  sample.size<-sizes[n]
+  hh<- prop.pop/ sample.size
+  hh.root <- hh^0.5
+  hh.conf.level <- (hh.root* confidence.level) * 100
+  range <- paste('sample size of', sample.size, 'has error +/-',paste0(round(hh.conf.level,2) ,'%') )
+  errors[n]<-hh.conf.level
+  print(range)
+} 
+plot(seq(50,400,50),errors,xlab='SampleSize',ylab='Sampling error rate',main='Worst case sample size required')
+sessionInfo()
+```
+
