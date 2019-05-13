@@ -1,10 +1,14 @@
 dat<-read.csv('DemDxData.csv',stringsAsFactor=F)
 
-diff.nb.yes<-length(grep('YES',dat$diff_discharge_agreement))
-diff.nb.no<-length(grep('NO',dat$diff_discharge_agreement))
-diff.nb.diags<- diff.nb.yes+diff.nb.no
-diff.percent.yes<-paste0(round(diff.nb.yes/diff.nb.diags *100,2),'%') 
-message('Initial dx percent agreement with discharge dx: ',diff.percent.yes)
+topD1_agreement<- length(grep('YES',dat$Top_D1_agreement_w_D2))
+topD1_disagreement<- length(grep('NO',dat$Top_D1_agreement_w_D2))
+topD1.nb.diags<- topD1_agreement+topD1_disagreement
+topD1.percent.yes<-paste0(round(topD1_agreement/topD1.nb.diags *100,2),'%') 
+
+top_3_D1_agreement<- length(grep('YES',dat$Top_3_D1_agreement_w_D2))
+top_3_D1_disagreement<- length(grep('NO',dat$Top_3_D1_agreement_w_D2))
+top_3_D1.nb.diags<- top_3_D1_agreement+top_3_D1_disagreement
+top_3_D1.percent.yes<-paste0(round(top_3_D1_agreement/top_3_D1.nb.diags *100,2),'%') 
 
 app.nb.yes<-length(grep('YES',dat$AppDischargeAgreement))
 app.nb.no<-length(grep('NO',dat$AppDischargeAgreement))
@@ -12,46 +16,39 @@ app.nb.diags<- app.nb.yes+app.nb.no
 app.percent.yes<-paste0(round(app.nb.yes/app.nb.diags *100,2),'%') 
 message('App dx percent agreement with discharge dx: ',app.percent.yes)
 
+# compare app to topd1
+topd1_app_diffs<-data.frame(jd=dat$Top_D1_agreement_w_D2, app=dat$AppDischargeAgreement)
+topd1_app_diffs[,1]<-as.character(topd1_app_diffs[,1])
+topd1_app_diffs[,2]<-as.character(topd1_app_diffs[,2])
+topd1_app_diffs_2<-topd1_app_diffs[nchar(topd1_app_diffs[,1])>0,]
 
-comp<-read.csv('DemDxData_reliability.csv',stringsAsFactor=F)
-comp.short<-data.frame(Study.Number=comp$Study.Number,SecondReviewer=comp$Did.App.and.Discharge.Agree.)
-comp.short$SecondReviewer<-as.character(comp.short$SecondReviewer)
-comp.short$SecondReviewer[grep('YES',comp.short$SecondReviewer,ignore.case=TRUE)]<-'YES'
-comp.short$SecondReviewer[grep('NO',comp.short$SecondReviewer,ignore.case=TRUE)]<-'NO'
-merged<-merge(dat,comp.short,by='Study.Number')
-comp.yes<-length(which(merged$SecondReviewer=='YES'))
-comp.no<-length(which(merged$SecondReviewer=='NO'))
-full.yes<-length(which(merged$AppDischargeAgreement=='YES'))
-full.no<-length(which(merged$AppDischargeAgreement=='NO'))
-
-merged.sm<-data.frame(Study.Number=merged$Study.Number,AppDischargeAgreement=merged$AppDischargeAgreement,SecondReviewer=merged$SecondReviewer)
-merged.yes<-merged.sm[merged.sm$AppDischargeAgreement=='YES',]
-merged.no<-merged.sm[merged.sm$AppDischargeAgreement=='NO',]
-merged.yes.comp<-merged.sm[merged.sm$SecondReviewer=='YES',]
-merged.no.comp<-merged.sm[merged.sm$SecondReviewer=='NO',]
-matches<-merged$AppDischargeAgreement==merged$SecondReviewer
-
-matched.but.app.failed<-table(merged$AppDischargeAgreement[matches])[[1]]
-matched.but.app.worked<-table(merged$AppDischargeAgreement[matches])[[2]]
-
-b<-length(which(merged.no$SecondReviewer=='YES'))
-c<-length(which(merged.no.comp$AppDischargeAgreement=='YES'))
-
-counts.dat<-data.frame(matrix(c(matched.but.app.failed,b,c,matched.but.app.worked),nrow=2))
-kappa<- (counts.dat[1,1]+counts.dat[2,2])/sum(counts.dat)*100
-message(paste('comparing 2 researchers, kappa statistic:',round(kappa,2),'%'))
+topd1_table<-data.frame(matrix(nrow=2,ncol=2))
+colnames(topd1_table)<-c('topD1','DemDx')
+rownames(topd1_table)<-c('Match','No Match')
+topd1_table$topD1[1]<- length(grep('YES',topd1_app_diffs_2$jd))
+topd1_table$topD1[2]<-length(grep('NO',topd1_app_diffs_2$jd))
+topd1_table$DemDx[1]<-length(grep('YES',topd1_app_diffs_2$app))
+topd1_table$DemDx[2]<-length(grep('NO',topd1_app_diffs_2$app))
+  
+top_d1_app_chisq<- chisq.test(topd1_table)
 
 
-diffs<-data.frame(jd=dat$diff_discharge_agreement, app=dat$AppDischargeAgreement)
-diffs[,1]<-as.character(diffs[,1])
-diffs[,2]<-as.character(diffs[,2])
-diffs2<-diffs[nchar(diffs[,1])>0,]
-diffs2[diffs2=='YES']<-1
-diffs2[diffs2=='NO']<-0
-diffs2[,1]<-as.numeric(diffs2[,1])
-diffs2[,2]<-as.numeric(diffs2[,2])
-t.test.app.jd<- t.test(diffs2$jd,diffs2$app,paired=T)
-message(paste('paired t test for difference between app and junior doctor:',round( t.test.app.jd$p.value,2)))
+# compare app to top3_d1
+top_3_d1_app_diffs<-data.frame(jd=dat$Top_3_D1_agreement_w_D2, app=dat$AppDischargeAgreement)
+top_3_d1_app_diffs[,1]<-as.character(top_3_d1_app_diffs[,1])
+top_3_d1_app_diffs[,2]<-as.character(top_3_d1_app_diffs[,2])
+top_3_d1_app_diffs_2<-top_3_d1_app_diffs[nchar(top_3_d1_app_diffs[,1])>0,]
 
-chisq.test(diffs2$jd,diffs2$app)
+top_3_d1_table<-data.frame(matrix(nrow=2,ncol=2))
+colnames(top_3_d1_table)<-c('top_3_D1','DemDx')
+rownames(top_3_d1_table)<-c('Match','No Match')
+top_3_d1_table$top_3_D1[1]<- length(grep('YES',top_3_d1_app_diffs_2$jd))
+top_3_d1_table$top_3_D1[2]<-length(grep('NO',top_3_d1_app_diffs_2$jd))
+top_3_d1_table$DemDx[1]<-length(grep('YES',top_3_d1_app_diffs_2$app))
+top_3_d1_table$DemDx[2]<-length(grep('NO',top_3_d1_app_diffs_2$app))
 
+top_3_d1_app_chisq<- chisq.test(top_3_d1_table)
+
+# merge
+merged<- data.frame(cbind(topD1=topd1_table$topD1,top_3_D1=top_3_d1_table$top_3_D1,DemDx=topd1_table$DemDx)) 
+rownames(merged)<-c('Match','No Match')
